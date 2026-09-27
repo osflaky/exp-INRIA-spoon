@@ -1,0 +1,12 @@
+{
+  "name": "spoon-changelog-generator",
+  "version": "1.0.0",
+  "description": "Generate the changelog for spoon.",
+  "main": "changelog.js",
+  "dependencies": {
+    "git-log-parser": "^1.2.0",
+    "through2": "^5.0.0"
+  },
+  "author": "Thomas Durieux",
+  "license": "MIT"
+}

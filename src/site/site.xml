@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+  <publishDate position="none" format=""/>
+
+  <!-- necessary for new site and checkstyle plugins -->
+  <skin>
+    <groupId>org.apache.maven.skins</groupId>
+    <artifactId>maven-fluido-skin</artifactId>
+    <version>2.0.0-M11</version>
+  </skin>
+
+
+  <body>
+    <links>
+      <item name="home" href="http://spoon.gforge.inria.fr/" />
+      <item name="javadoc" href="apidocs/index.html" />
+      <item name="forge" href="http://gforge.inria.fr/projects/spoon/" />
+    </links>
+    <!--menu ref="parent"/-->
+    <menu ref="reports" inherit="bottom"/>
+  </body>
+</project>

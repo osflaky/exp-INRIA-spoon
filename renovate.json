@@ -1,0 +1,29 @@
+{
+   "extends": [
+      "config:recommended",
+      "helpers:pinGitHubActionDigests",
+      ":semanticCommitTypeAll(build)"
+   ],
+   "ignoreDeps": [
+      "org.apache.maven:maven-model"
+   ],
+   "packageRules": [
+      {
+         "matchUpdateTypes": [
+            "minor",
+            "patch",
+            "pin",
+            "digest",
+            "pinDigest",
+            "lockFileMaintenance"
+         ],
+         "automerge": true
+      }
+   ],
+   "nix": {
+      "enabled": true
+   },
+   "lockFileMaintenance": {
+      "enabled": true
+   }
+}

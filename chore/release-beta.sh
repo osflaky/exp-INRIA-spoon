@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Version used to create the beta release
+OLD_VERSION="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | sed 's/-SNAPSHOT//')"
+# Version that will be reset back to after the beta release
+OLD_VERSION_WITH_SNAPSHOT="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
+
+if [[ ! $OLD_VERSION_WITH_SNAPSHOT =~ .*-SNAPSHOT ]]; then
+  echo "Not a snapshot version, skipping"
+  exit 78
+fi
+
+# Compute next beta number
+# Compute next beta number
+echo "::group::Computing next beta number"
+LAST_BETA_NUMBER="$(
+  curl --fail --silent \
+    'https://repo1.maven.org/maven2/fr/inria/gforge/spoon/spoon-core/maven-metadata.xml' |
+    env OLD_VERSION="$OLD_VERSION" yq -p=xml -r '
+      .metadata.versioning.versions.version
+      | map(select(test("^" + strenv(OLD_VERSION) + "-beta-[0-9]+$")))
+      | map(capture("(?P<beta>[0-9]+)$").beta | tonumber)
+      | max // 0
+    ' -
+)"
+echo "LAST_BETA_NUMBER $LAST_BETA_NUMBER"
+
+NEW_BETA_NUMBER=$((LAST_BETA_NUMBER + 1))
+echo "NEW_BETA_NUMBER $NEW_BETA_NUMBER"
+NEXT_BETA_VERSION="$OLD_VERSION-beta-$NEW_BETA_NUMBER"
+echo "::endgroup::"
+
+BRANCH_NAME="beta-release/$NEXT_BETA_VERSION"
+
+echo "::group::Setting beta-release version"
+mvn -f spoon-pom --no-transfer-progress --batch-mode versions:set -DnewVersion="$NEXT_BETA_VERSION" -DprocessAllModules -DprocessParent=false
+echo "::endgroup::"
+
+echo "::group::Commit & Push changes"
+git checkout -b "$BRANCH_NAME"
+git commit -am "release: Releasing version $NEXT_BETA_VERSION"
+git push --set-upstream origin "$BRANCH_NAME"
+echo "::endgroup::"
+
+echo "::group::Staging beta-release"
+mvn -f spoon-pom --no-transfer-progress --batch-mode -Pjreleaser clean deploy -DaltDeploymentRepository=local::default::file:./target/staging-deploy
+mvn --no-transfer-progress --batch-mode -Pjreleaser deploy:deploy-file -Dfile="./spoon-pom/pom.xml" -DpomFile="./spoon-pom/pom.xml" -Durl="file://$(mvn help:evaluate -D"expression=project.basedir" -q -DforceStdout)/target/staging-deploy"
+echo "::endgroup::"
+
+echo "::group::Running jreleaser"
+JRELEASER_PROJECT_VERSION="$NEXT_BETA_VERSION" jreleaser-cli release
+echo "::endgroup::"
+
+echo "::group::Delete branch"
+git push origin --delete "$BRANCH_NAME"
+echo "::endgroup::"
